@@ -5,14 +5,14 @@ from .models import *
 from .schemas import *
 from .common import *
 from .security import current,allow
-from . import consignment_service as consignment,fit_service as fit,fitting_service as fitting,sale_service as sale,return_service as returns,settlement_service as settlement
+from . import consignment_service as consignment,fit_service as fit,fitting_service as fitting,sale_service as sale,return_service as returns,settlement_service as settlement,remeasure_service as remeasure
 router=APIRouter()
 def change(u,action,fn,supervisor=False):
  allow(u,*(['supervisor'] if supervisor else ['operator','supervisor']))
  with Session() as s:x=fn(s);audit(s,u,action,x);s.commit();return dump(x)
 @router.get('/register')
 def register(u=Depends(current)):
- with Session() as s:return {n:[dump(x) for x in rows(s,c)] for n,c in [('consignors',Consignor),('agreements',Agreement),('amendments',Amendment),('garments',Garment),('measurements',Measurement),('profiles',FitProfile),('assessments',FitAssessment),('fittings',Fitting),('sales',Sale),('returns',Return),('payouts',Payout),('withdrawals',Withdrawal),('clock',Shop)]}
+ with Session() as s:return {n:[dump(x) for x in rows(s,c)] for n,c in [('consignors',Consignor),('agreements',Agreement),('amendments',Amendment),('garments',Garment),('measurements',Measurement),('profiles',FitProfile),('assessments',FitAssessment),('fittings',Fitting),('remeasurements',Remeasurement),('sales',Sale),('returns',Return),('payouts',Payout),('withdrawals',Withdrawal),('clock',Shop)]}
 @router.get('/audit')
 def audits(u=Depends(current)):
  with Session() as s:return [dump(x) for x in rows(s,Audit)]
@@ -40,6 +40,22 @@ def assessments(d:AssessmentIn,u=Depends(current)):
 def fittings(d:FittingIn,u=Depends(current)):return change(u,'排他留衣',lambda s:fitting.reserve(s,d.model_dump()))
 @router.post('/fittings/{id}/cancel')
 def cancel(id:int,u=Depends(current)):return change(u,'取消试衣',lambda s:fitting.cancel(s,id))
+@router.post('/remeasurements')
+def remeasurements(d:RemeasureIn,u=Depends(current)):
+ x=change(u,'整烫复量',lambda s:remeasure.submit(s,d.model_dump()))
+ try:redis.from_url(os.environ['REDIS_URL'],socket_connect_timeout=1,socket_timeout=2).rpush('resale:remeasure',x['id'])
+ except Exception:
+  with Session() as s:r=s.get(Remeasurement,x['id']);r.state='failed';r.error='复量队列不可达，请按原单重试';s.commit()
+  raise HTTPException(503,'复量队列暂时不可达，复量单已标记失败，可按原单重试')
+ return x
+@router.post('/remeasurements/{id}/retry')
+def remeasure_retry(id:int,u=Depends(current)):
+ x=change(u,'复量重试',lambda s:remeasure.retry(s,id))
+ try:redis.from_url(os.environ['REDIS_URL'],socket_connect_timeout=1,socket_timeout=2).rpush('resale:remeasure',x['id'])
+ except Exception:
+  with Session() as s:r=s.get(Remeasurement,x['id']);r.state='failed';r.error='复量队列不可达，请按原单重试';s.commit()
+  raise HTTPException(503,'复量队列暂时不可达，复量单已标记失败，可按原单重试')
+ return x
 @router.post('/sales')
 def sales(d:SaleIn,u=Depends(current)):return change(u,'试衣成交',lambda s:sale.sell(s,d.model_dump()))
 @router.post('/returns')

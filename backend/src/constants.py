@@ -1,3 +1,5 @@
 ROLES=('operator','supervisor','viewer')
 GARMENT_STATES=('unmeasured','listed','held','sold','inspection','withdrawn')
+FITTING_STATES=('reserved','rechecking','cancelled','completed')
+REMEASURE_STATES=('queued','fitted','loose','tight','failed')
 FIT_LABELS=('合身','偏紧','偏松')

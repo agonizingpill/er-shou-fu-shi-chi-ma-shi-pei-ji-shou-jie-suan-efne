@@ -31,6 +31,9 @@ class FitAssessment(Base):
 class Fitting(Base):
  __tablename__='fittings'
  id=Column(Integer,primary_key=True);garment_id=Column(Integer,ForeignKey('garments.id'),nullable=False);profile_id=Column(Integer,ForeignKey('profiles.id'),nullable=False);slot=Column(Integer,nullable=False);starts=Column(String(32),nullable=False);ends=Column(String(32),nullable=False);state=Column(String(20),default='reserved',nullable=False)
+class Remeasurement(Base):
+ __tablename__='remeasurements'
+ id=Column(Integer,primary_key=True);fitting_id=Column(Integer,ForeignKey('fittings.id'),nullable=False);garment_id=Column(Integer,ForeignKey('garments.id'),nullable=False);profile_id=Column(Integer,ForeignKey('profiles.id'),nullable=False);chest=Column(Float,nullable=False);shoulder=Column(Float,nullable=False);length=Column(Float,nullable=False);elasticity=Column(Float,nullable=False);cut=Column(Integer,nullable=False);state=Column(String(20),default='queued',nullable=False);label=Column(String(20),default='',nullable=False);result=Column(JSON,nullable=True);error=Column(String(500),default='',nullable=False)
 class Sale(Base):
  __tablename__='sales'
  id=Column(Integer,primary_key=True);fitting_id=Column(Integer,ForeignKey('fittings.id'),unique=True,nullable=False);garment_id=Column(Integer,ForeignKey('garments.id'),nullable=False);price_cents=Column(Integer,nullable=False);commission_bp=Column(Integer,nullable=False);commission_cents=Column(Integer,nullable=False);net_cents=Column(Integer,nullable=False);sold_at=Column(String(32),nullable=False);return_deadline=Column(String(32),nullable=False);state=Column(String(20),default='completed',nullable=False)

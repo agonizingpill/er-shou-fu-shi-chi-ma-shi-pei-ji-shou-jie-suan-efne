@@ -19,6 +19,8 @@ class AssessmentIn(Input):
  garment_id:int;profile_id:int
 class FittingIn(Input):
  garment_id:int;profile_id:int;slot:int=Field(ge=1,le=2);starts:str;ends:str
+class RemeasureIn(Input):
+ fitting_id:int;chest:float=Field(ge=40,le=180);shoulder:float=Field(ge=20,le=80);length:float=Field(ge=20,le=180);elasticity:float=Field(ge=0,le=1);cut:int=Field(ge=0,le=2)
 class SaleIn(Input):
  fitting_id:int;price_cents:int=Field(gt=0,le=10000000)
 class ReturnIn(Input):

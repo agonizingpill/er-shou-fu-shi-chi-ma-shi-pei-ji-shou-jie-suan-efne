@@ -11,7 +11,9 @@ def withdraw(s,id,d):
  if time(c.now)<time(a.ends):fail('寄售期未满，不得期满撤回')
  if g.state not in ['unmeasured','listed','held']:fail('已售、待复检或已撤回衣物不可撤回')
  for f in rows(s,Fitting):
-  if f.garment_id==g.id and f.state=='reserved':f.state='cancelled'
+  if f.garment_id==g.id and f.state in ['reserved','rechecking']:f.state='cancelled'
+ for r in rows(s,Remeasurement):
+  if r.garment_id==g.id and r.state in ['queued','failed']:r.state='failed';r.error='寄售期满撤回，复量单中止'
  x=Withdrawal(garment_id=g.id,reason=d['reason'],returned_at=c.now);s.add(x);g.state='withdrawn';s.flush();return x
 def clock(s,d):
  c=lock(s);t=time(d['now'])
